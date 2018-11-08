@@ -60,11 +60,20 @@ function InstallAPI()
   clear
   echo "Getting ready to install Telegram-Bot-API (Python)..."
 
-  sudo -H pip install python-telegram-bot --upgrade -y > /dev/null
+  sudo -H pip install python-telegram-bot --upgrade &> /dev/null
   if [ "$?" -eq "0" ]; then
     echo -e "\tAPI installed!"
   else
     echo -e "\tWe couldn't install the API!"
+  fi
+
+  echo "Getting ready to install emoji (Python)..."
+
+  sudo -H pip install emoji --upgrade &> /dev/null
+  if [ "$?" -eq "0" ]; then
+    echo -e "\tEmoji installed!"
+  else
+    echo -e "\tWe couldn't install Emoji!"
   fi
 
   backtoMenu
@@ -98,15 +107,19 @@ function LaunchBot()
   clear
   echo "Starting Bot $1..."
 
-  sudo cp -r "./$1" "/tmp/$1"
+  botName=$1
+
+  sudo rm -r "/tmp/$botName"
+  sudo cp -r "./$botName" "/tmp/$botName"
 
   # Token extraction
-  line=$(grep $1 ./PrivateData)
-  read -ra splited <<< "$line"
+  line=$(grep $botName ./PrivateData)
+  read -ra splitted <<< "$line"
   actualToken=${splitted[1]}
-  sed -i -e "s/BotFather_provided_token/$actualToken/g" "/tmp/$1/$1.py"
+  echo "Token: $actualToken"
+  sudo sed -i -e "s/BotFather_provided_token/$actualToken/g" "/tmp/$botName/$botName.py"
 
-  python "/tmp/$1/$1.py"
+  python "/tmp/$botName/$botName.py"
 
   backtoMenu
 
