@@ -15,5 +15,5 @@ Working in
 Used libraries
 --
 
-1. `python-telegram-bot <https://github.com/python-telegram-bot/python-telegram-bot>`_
-2. `emoji <https://github.com/python-telegram-bot/python-telegram-bot/wiki/Emoji>`_
+1. [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot)
+2. [emoji](https://github.com/python-telegram-bot/python-telegram-bot/wiki/Emoji)
