@@ -10,10 +10,11 @@ Finished Bots
 Working in
 --
 
-1. Chapter Notifier - Manga availability notifier, based on Mangapanda.onl webpage
+1. Chapter Notifier - Manga availability notifier, based on [mangapanda](www.mangapanda.onl) webpage
 
 Used libraries
 --
 
 1. [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot)
 2. [emoji](https://github.com/python-telegram-bot/python-telegram-bot/wiki/Emoji)
+3. [sqlite3](https://sqlite.org/index.html)

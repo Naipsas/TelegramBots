@@ -76,6 +76,15 @@ function InstallAPI()
     echo -e "\tWe couldn't install Emoji!"
   fi
 
+  echo "Getting ready to install sqlite3..."
+
+  sudo apt-get install sqlite3 -y &> /dev/null
+  if [ "$?" -eq "0" ]; then
+    echo -e "\tsqlite3 installed!"
+  else
+    echo -e "\tWe couldn't install sqlite3!"
+  fi
+
   backtoMenu
 
 }

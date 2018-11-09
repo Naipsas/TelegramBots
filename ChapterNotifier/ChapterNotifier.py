@@ -6,6 +6,7 @@
 # Started on Nov 2018
 
 import logging
+
 from enum import Enum
 
 from emoji import emojize
@@ -18,6 +19,8 @@ from telegram.ext import Filters
 from telegram.ext import Updater
 from telegram.ext import Dispatcher
 from telegram.ext import CommandHandler, MessageHandler
+
+from Classes.DBmanager import DBmanager
 
 import sys
 reload(sys)
@@ -56,6 +59,16 @@ class Bot:
                              level=logging.INFO)
 
         self.logger = logging.getLogger(__name__)
+
+        # Database usage
+        db_file="ChapterNotifier.db"
+        
+        try:
+            self.DB = DBmanager(db_file)
+            self.logger.info('\tSe ha conectado con la base de datos: "%s"', db_file)
+        except Exception as e:
+            self.logger.critical('\tNo se pudo conectar con la base de datos: "%s"', db_file)
+            exit()
 
         # Library objects
         self.updater = Updater(token="BotFather_provided_token")
