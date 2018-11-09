@@ -9,7 +9,11 @@ import logging
 from enum import Enum
 
 from emoji import emojize
+from functools import wraps
+
 from telegram import ParseMode
+from telegram import ChatAction
+
 from telegram.ext import Filters
 from telegram.ext import Updater
 from telegram.ext import Dispatcher
@@ -23,8 +27,17 @@ sys.setdefaultencoding("UTF-8")
 
 welcome = ["¡Bienvenido al bot Chapter Notifier!\n\n",
 " Este bot sirve para estar al tanto de tus mangas favoritos. Para ello, usamos la web MangaPanda.onl\n\n",
-" Usa el comando /help para consultar todos los comandos disponibles en este bot\n\n",
-" Dime, ¿qué mangas quieres seguir? Recuerda decirmelos de uno en uno, y cuando acabes usa /done\n\n"]
+" Usa el comando /help para consultar todos los comandos disponibles en este bot"""] #\n\n" ,
+#" Dime, ¿qué mangas quieres seguir? Recuerda decirmelos de uno en uno, y cuando acabes usa /done\n\n"]
+
+exc_icon = emojize(":exclamation: ", use_aliases=True)
+add_usage = [exc_icon, "Por favor, use:\n\n",
+            "/add Nombre del manga\n",
+            "Para evitar errores, se recomienda copiarlo de la web!"]
+
+del_usage = [exc_icon, "Por favor, use:\n\n",
+            "/del Nombre del manga\n",
+            "Para evitar errores, se recomienda copiarlo del listado!"]
 
 # Definitions
 
@@ -72,7 +85,7 @@ class Bot:
         #self.dp.add_handler(CommandHandler('info', self.info, pass_args=True))
         #self.dp.add_handler(CommandHandler('done', self.done, pass_args=False))
         self.dp.add_handler(CommandHandler('help', self.help, pass_args=False))
-        self.dp.add_handler(MessageHandler(Filters.command, unknown))
+        self.dp.add_handler(MessageHandler(Filters.command, self.unknown))
 
     def run(self):
         self.logger.info("Survey Bot en funcionamiento")
@@ -80,11 +93,31 @@ class Bot:
         self.updater.start_polling()
         self.updater.idle()
 
+    # Auxiliar FUNCTIONS
+    def send_action(action):
+        """Sends `action` while processing func command."""
+
+        def decorator(func):
+            @wraps(func)
+            def command_func(*args, **kwargs):
+                self, bot, update = args
+                bot.send_chat_action(chat_id=update.message.chat_id, action=action)
+                func(self, bot, update, **kwargs)
+            return command_func
+
+        return decorator
+
+    send_typing_action = send_action(ChatAction.TYPING)
+    send_upload_video_action = send_action(ChatAction.UPLOAD_VIDEO)
+    send_upload_photo_action = send_action(ChatAction.UPLOAD_PHOTO)
+
     # COMMAND FUNCTIONS
+    @send_typing_action
     def start(self, bot, update):
         self.logger.info('\tBot iniciado por: "@%s"', update.effective_user.username)
         bot.send_message(chat_id=update.message.chat_id, text="".join(welcome))
 
+    @send_typing_action
     def help(self, bot, update):
         icon = emojize(":information_source: ", use_aliases=True)
         text = icon + " Comandos disponibles en este bot:\n\n"
@@ -105,14 +138,10 @@ class Bot:
         bot.send_message(chat_id=update.message.chat_id, text=text,
                             parse_mode=ParseMode.MARKDOWN)
 
+    @send_typing_action
     def add(self, bot, update, args):
         if (len(args) == 0):
-
-            icon = emojize(":exclamation: ", use_aliases=True)
-            info_msg = [icon, "Por favor, use:\n",
-                        "/add Nombre del manga\n",
-                        "Para evitar errores, se recomienda copiarlo de la web!"]
-            bot.send_message(chat_id=update.message.chat_id, text="".join(info_msg))
+            bot.send_message(chat_id=update.message.chat_id, text="".join(add_usage))
 
         else:
             icon = emojize(":information_source: ", use_aliases=True)
@@ -127,14 +156,10 @@ class Bot:
                             update.effective_user.username,
                             manga)
 
+    @send_typing_action
     def delete(self, bot, update, args):
         if (len(args) == 0):
-
-            icon = emojize(":exclamation: ", use_aliases=True)
-            info_msg = [icon, "Por favor, use:\n",
-                        "/del Nombre del manga\n",
-                        "Para evitar errores, se recomienda copiarlo del listado!"]
-            bot.send_message(chat_id=update.message.chat_id, text="".join(info_msg))
+            bot.send_message(chat_id=update.message.chat_id, text="".join(del_usage))
 
         else:
             icon = emojize(":information_source: ", use_aliases=True)
@@ -149,13 +174,14 @@ class Bot:
                             update.effective_user.username,
                             manga)
 
-def unknown(self, bot, update):
-    icon = emojize(":exclamation: ", use_aliases=True)
-    info_msg = [icon, "¡Comando no reconocido!"]
-    bot.send_message(chat_id=update.message.chat_id, text=info_msg)
-    self.logger.info('El usuario "@%s" ha introducido un comando no existente: "%s"',
-                    update.effective_user.username,
-                    update.message)
+    @send_typing_action
+    def unknown(self, bot, update):
+        icon = emojize(":exclamation: ", use_aliases=True)
+        info_msg = [icon, "¡Comando no reconocido!"]
+        bot.send_message(chat_id=update.message.chat_id, text="".join(info_msg))
+        self.logger.info('El usuario "@%s" ha introducido un comando no existente: "%s"',
+                        update.effective_user.username,
+                        update.message.text)
 
 if __name__ == '__main__':
 
