@@ -20,13 +20,17 @@ from telegram.ext import Updater
 from telegram.ext import Dispatcher
 from telegram.ext import CommandHandler, MessageHandler
 
+from Classes.Manga import Manga
+from Classes.MangaSet import MangaSet
 from Classes.DBmanager import DBmanager
+from Classes.UserBotState import UserBotState
+
 
 import sys
 reload(sys)
 sys.setdefaultencoding("UTF-8")
 
-# Texts
+# Texts to user
 
 welcome = ["¡Bienvenido al bot Chapter Notifier!\n\n",
 " Este bot sirve para estar al tanto de tus mangas favoritos. Para ello, usamos la web MangaPanda.onl\n\n",
@@ -42,13 +46,26 @@ del_usage = [exc_icon, "Por favor, use:\n\n",
             "/del Nombre del manga\n",
             "Para evitar errores, se recomienda copiarlo del listado!"]
 
-# Definitions
+unknown_user = [exc_icon, "¡Comando no reconocido!"]
 
-class userBotState(Enum):
-    NONE = 0
-    NEW = 1
-    MANGA_RECORDING = 2
-    RUNNING = 3
+# Logs Texts - Templates
+
+# Icons for kind of error (bot logs)
+info_icon = emojize(":information_source: ", use_aliases=True)
+ok_icon = emojize(":white_check_mark:", use_aliases=True)
+warn_icon = emojize(":warning:", use_aliases=True)
+error_icon = emojize(":red_circle:", use_aliases=True)
+critical_icon = emojize(":black_circle:", use_aliases=True)
+
+bot_icon = emojize(":computer:", use_aliases=True)
+bot_log = bot_icon + ' Funcion: %s - Mensaje: %s'
+
+# User action (OK, NOK)
+
+user_icon = emojize(":bust_in_silhouette:", use_aliases=True)
+user_log = user_icon + ' : "@%s" - Comando: %s - Resultado: %s'
+
+# Definitions
 
 class Bot:
 
@@ -61,14 +78,17 @@ class Bot:
         self.logger = logging.getLogger(__name__)
 
         # Database usage
-        db_file="ChapterNotifier.db"
-        
+        db_file = "ChapterNotifier.db"
+
         try:
-            self.DB = DBmanager(db_file)
-            self.logger.info('\tSe ha conectado con la base de datos: "%s"', db_file)
+            self.db = DBmanager(db_file)
+            self.log("bot", "info", ["init", "DB Conectada: " + db_file])
         except Exception as e:
-            self.logger.critical('\tNo se pudo conectar con la base de datos: "%s"', db_file)
+            self.log("bot", "critical", ["init", "No se pudo conectar a la base de datos: " + db_file])
             exit()
+
+        # Dataset list for every user
+        self.dataset = []
 
         # Library objects
         self.updater = Updater(token="BotFather_provided_token")
@@ -101,8 +121,7 @@ class Bot:
         self.dp.add_handler(MessageHandler(Filters.command, self.unknown))
 
     def run(self):
-        self.logger.info("Survey Bot en funcionamiento")
-
+        self.log("bot", "info", ["run", "RUNNING"])
         self.updater.start_polling()
         self.updater.idle()
 
@@ -124,15 +143,59 @@ class Bot:
     send_upload_video_action = send_action(ChatAction.UPLOAD_VIDEO)
     send_upload_photo_action = send_action(ChatAction.UPLOAD_PHOTO)
 
+    def user_collection(self, name, collection_list):
+        for item in collection_list:
+            if item.user == name:
+                return item
+
+    def log(self, origin, type, args):
+
+        if origin == "user":
+
+            if type == "OK":
+                prefix = '\t' + ok_icon
+            else: # type == "NOK"
+                prefix = '\t' + error_icon
+
+            # Both info, user faulires are not critical for the bot itself
+            self.logger.info(prefix + user_log, args[0], args[1], args[2])
+
+        else: # origin = bot
+
+            if type == "info":
+                prefix = info_icon
+                self.logger.info(prefix + bot_log, args[0], args[1])
+
+            elif type == "warn":
+                prefix = warn_icon
+                self.logger.warn(prefix + bot_log, args[0], args[1])
+
+            elif type == "error":
+                prefix = error_icon
+                self.logger.error(prefix + bot_log, args[0], args[1])
+
+            else: # type == "critical"
+                prefix = critical_icon
+                self.logger.critical(prefix + bot_log, args[0], args[1])
+
     # COMMAND FUNCTIONS
     @send_typing_action
     def start(self, bot, update):
-        self.logger.info('\tBot iniciado por: "@%s"', update.effective_user.username)
+        try:
+            # Create the user in our data
+            user = update.effective_user.username
+            self.dataset.append(MangaSet(user))
+            self.db.createUserTable(user)
+            # Messages
+            self.log("user", "OK", [user, "start", "Bot iniciado"])
+        except Exception as e:
+            self.log("user", "NOK", [user, "start", e.message])
+
         bot.send_message(chat_id=update.message.chat_id, text="".join(welcome))
 
     @send_typing_action
     def help(self, bot, update):
-        icon = emojize(":information_source: ", use_aliases=True)
+        icon = info_icon
         text = icon + " Comandos disponibles en este bot:\n\n"
 
         commands = [["",  "*Gestión de los mangas*\n"],
@@ -157,17 +220,21 @@ class Bot:
             bot.send_message(chat_id=update.message.chat_id, text="".join(add_usage))
 
         else:
-            icon = emojize(":information_source: ", use_aliases=True)
+            # Previous
+            user = update.effective_user.username
             manga = ""
             for item in args:
                 manga += item + " "
-            info_msg = [icon, "Manga añadido: ",
+            manga.replace("\"", "")
+            info_msg = [info_icon, "Manga añadido: ",
                         manga]
+            # Data work
+            newManga = Manga(manga, "last")
+            self.user_collection(user, self.dataset).addManga(newManga)
+            self.db.addMangaToUser(user, newManga.name)
+            # Messages
             bot.send_message(chat_id=update.message.chat_id, text="".join(info_msg))
-
-            self.logger.info('El usuario "@%s" ha añadido el manga: "%s"',
-                            update.effective_user.username,
-                            manga)
+            self.log("user", "OK", [user, "add", "Manga añadido: " + manga])
 
     @send_typing_action
     def delete(self, bot, update, args):
@@ -175,26 +242,26 @@ class Bot:
             bot.send_message(chat_id=update.message.chat_id, text="".join(del_usage))
 
         else:
-            icon = emojize(":information_source: ", use_aliases=True)
+            # Previous
+            user = update.effective_user.username
             manga = ""
             for item in args:
                 manga += item + " "
-            info_msg = [icon, "Manga eliminado: ",
+            info_msg = [info_icon, "Manga eliminado: ",
                         manga]
+            # Data work
+            self.user_collection(update.effective_user.username, self.dataset).deleteManga(manga)
+            self.db.delMangaFromUser(update.effective_user.username, manga)
+            # Messages
             bot.send_message(chat_id=update.message.chat_id, text="".join(info_msg))
 
-            self.logger.info('El usuario "@%s" ha eliminado el manga: "%s"',
-                            update.effective_user.username,
-                            manga)
+            self.log("user", "OK", [user, "delete", "Manga eliminado: " + manga])
 
     @send_typing_action
     def unknown(self, bot, update):
-        icon = emojize(":exclamation: ", use_aliases=True)
-        info_msg = [icon, "¡Comando no reconocido!"]
-        bot.send_message(chat_id=update.message.chat_id, text="".join(info_msg))
-        self.logger.info('El usuario "@%s" ha introducido un comando no existente: "%s"',
-                        update.effective_user.username,
-                        update.message.text)
+        user = update.effective_user.username
+        bot.send_message(chat_id=update.message.chat_id, text="".join(unknown_user))
+        self.log("user", "NOK", [user, update.message.text, "Comando no existente"])
 
 if __name__ == '__main__':
 

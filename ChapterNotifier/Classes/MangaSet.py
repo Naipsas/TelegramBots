@@ -13,6 +13,7 @@ class MangaSet:
         if user == "":
             raise Exception("El usuario de una colección no puede estar vacío")
         else:
+            self.user = user
             self.mangas = []
 
     def addManga(self, manga):

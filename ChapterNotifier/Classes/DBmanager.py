@@ -8,6 +8,8 @@
 # DB manager class
 
 import sqlite3
+from Manga import Manga
+from MangaSet import MangaSet
 
 if __name__ == "__main__":
     raise Exception("Este fichero es una clase no ejecutable")
@@ -15,7 +17,7 @@ if __name__ == "__main__":
 class DBmanager:
 
     def __init__(self, file):
-        self.db_con = sqlite3.connect(file)
+        self.db_con = sqlite3.connect(file, check_same_thread = False)
 
     def createUserTable(self, user):
         query_list = ["CREATE TABLE ", user,
@@ -34,18 +36,18 @@ class DBmanager:
         readQuery = "".join(query_list)
         return self.db_con.execute(readQuery)
 
-    def addMangaToUser(self, user, manga, notificado):
+    def addMangaToUser(self, user, manga):
         query_list = ["INSERT INTO ", user,
          " (manga, notificado)",
          "  VALUES (\"",
-         manga, "\", \"", notificado, "\");"]
+         manga, "\", \"last\");"]
         insertQuery = "".join(query_list)
         self.db_con.execute(insertQuery)
         self.db_con.commit()
 
     def delMangaFromUser(self, user, manga):
-        query_list = ["DELETE * FROM ", user,
-         " WHERE manga = \"", manga, "\";"]
+        query_list = ["DELETE from ", user,
+         " where manga = \"", manga, "\";"]
         deleteQuery = "".join(query_list)
         self.db_con.execute(deleteQuery)
 
