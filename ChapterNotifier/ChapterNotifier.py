@@ -30,27 +30,7 @@ import sys
 reload(sys)
 sys.setdefaultencoding("UTF-8")
 
-# Texts to user
-
-welcome = ["¡Bienvenido al bot Chapter Notifier!\n\n",
-" Este bot sirve para estar al tanto de tus mangas favoritos. Para ello, usamos la web MangaPanda.onl\n\n",
-" Usa el comando /help para consultar todos los comandos disponibles en este bot"""] #\n\n" ,
-#" Dime, ¿qué mangas quieres seguir? Recuerda decirmelos de uno en uno, y cuando acabes usa /done\n\n"]
-
-exc_icon = emojize(":exclamation: ", use_aliases=True)
-add_usage = [exc_icon, "Por favor, use:\n\n",
-            "/add Nombre del manga\n",
-            "Para evitar errores, se recomienda copiarlo de la web!"]
-
-del_usage = [exc_icon, "Por favor, use:\n\n",
-            "/del Nombre del manga\n",
-            "Para evitar errores, se recomienda copiarlo del listado!"]
-
-unknown_user = [exc_icon, "¡Comando no reconocido!"]
-
-# Logs Texts - Templates
-
-# Icons for kind of error (bot logs)
+# Icons
 info_icon = emojize(":information_source: ", use_aliases=True)
 ok_icon = emojize(":white_check_mark:", use_aliases=True)
 warn_icon = emojize(":warning:", use_aliases=True)
@@ -58,11 +38,37 @@ error_icon = emojize(":red_circle:", use_aliases=True)
 critical_icon = emojize(":black_circle:", use_aliases=True)
 
 bot_icon = emojize(":computer:", use_aliases=True)
-bot_log = bot_icon + ' Funcion: %s - Mensaje: %s'
-
-# User action (OK, NOK)
-
 user_icon = emojize(":bust_in_silhouette:", use_aliases=True)
+
+exc_icon = emojize(":exclamation: ", use_aliases=True)
+
+# Texts to user
+
+welcome = ["¡Bienvenido al bot Chapter Notifier!\n\n",
+" Este bot sirve para estar al tanto de tus mangas favoritos. Para ello, usamos la web MangaPanda.onl\n\n",
+" Usa el comando /help para consultar todos los comandos disponibles en este bot"""] #\n\n" ,
+#" Dime, ¿qué mangas quieres seguir? Recuerda decirmelos de uno en uno, y cuando acabes usa /done\n\n"]
+
+add_usage = [exc_icon, "Por favor, use:\n\n",
+            "/add Nombre del manga\n",
+            "Para evitar errores, se recomienda copiarlo de la web!"]
+
+add_msg = [info_icon, "Manga añadido a la colección."]
+add_error = [error_icon, "¡El manga ya existe en la colección!"]
+
+del_usage = [exc_icon, "Por favor, use:\n\n",
+            "/del Nombre del manga\n",
+            "Para evitar errores, se recomienda copiarlo del listado!"]
+
+del_msg = [info_icon, "Manga eliminado de la colección."]
+del_error = [error_icon, "¡El manga no está en la colección!"]
+
+unknown_user = [exc_icon, "¡Comando no reconocido!"]
+
+# Logs Texts - Templates
+# Bot log
+bot_log = bot_icon + ' Funcion: %s - Mensaje: %s'
+# User action (OK, NOK)
 user_log = user_icon + ' : "@%s" - Comando: %s - Resultado: %s'
 
 # Definitions
@@ -226,15 +232,19 @@ class Bot:
             for item in args:
                 manga += item + " "
             manga.replace("\"", "")
-            info_msg = [info_icon, "Manga añadido: ",
-                        manga]
-            # Data work
-            newManga = Manga(manga, "last")
-            self.user_collection(user, self.dataset).addManga(newManga)
-            self.db.addMangaToUser(user, newManga.name)
-            # Messages
-            bot.send_message(chat_id=update.message.chat_id, text="".join(info_msg))
-            self.log("user", "OK", [user, "add", "Manga añadido: " + manga])
+
+            try:
+                # Data work
+                newManga = Manga(manga, "last")
+                self.user_collection(user, self.dataset).addManga(newManga)
+                self.db.addMangaToUser(user, newManga.name)
+                # Messages
+                bot.send_message(chat_id=update.message.chat_id, text="".join(add_msg))
+                self.log("user", "OK", [user, "add", manga + " añadido!"])
+            except Exception as e:
+                bot.send_message(chat_id=update.message.chat_id, text="".join(add_error))
+                self.log("user", "NOK", [user, "add", manga + " ya existente!"])
+
 
     @send_typing_action
     def delete(self, bot, update, args):
@@ -247,15 +257,18 @@ class Bot:
             manga = ""
             for item in args:
                 manga += item + " "
-            info_msg = [info_icon, "Manga eliminado: ",
-                        manga]
-            # Data work
-            self.user_collection(update.effective_user.username, self.dataset).deleteManga(manga)
-            self.db.delMangaFromUser(update.effective_user.username, manga)
-            # Messages
-            bot.send_message(chat_id=update.message.chat_id, text="".join(info_msg))
+            manga.replace("\"", "")
 
-            self.log("user", "OK", [user, "delete", "Manga eliminado: " + manga])
+            try:
+                # Data work
+                self.user_collection(user, self.dataset).deleteManga(manga)
+                self.db.delMangaFromUser(user, manga)
+                # Messages
+                bot.send_message(chat_id=update.message.chat_id, text="".join(del_msg))
+                self.log("user", "OK", [user, "delete", manga + " eliminado!"])
+            except Exception as e:
+                bot.send_message(chat_id=update.message.chat_id, text="".join(del_error))
+                self.log("user", "NOK", [user, "del", manga + " no existe!"])
 
     @send_typing_action
     def unknown(self, bot, update):
