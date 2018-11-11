@@ -5,9 +5,9 @@
 # Chapter Availability Notifier
 # Started on Nov 2018
 
-import logging
-
 from enum import Enum
+
+import logging
 
 from emoji import emojize
 from functools import wraps
@@ -24,7 +24,7 @@ from Classes.Manga import Manga
 from Classes.MangaSet import MangaSet
 from Classes.DBmanager import DBmanager
 from Classes.UserBotState import UserBotState
-
+from Classes.ChapterSeeker import ChapterSeeker
 
 import sys
 reload(sys)
@@ -109,6 +109,7 @@ class Bot:
 
         # Dataset list for every user
         self.dataset = []
+        self.seeker = ChapterSeeker(self.logger)
 
         # Load data from Database
         dbTables = self.db.getAllUsernames()
@@ -262,6 +263,7 @@ class Bot:
             try:
                 # Data work
                 newManga = Manga(manga, "last")
+                #self.seeker.addMangaSuscription(manga, user, update.message.chat_id)
                 self.user_collection(user, self.dataset).addManga(newManga)
                 self.db.addMangaToUser(user, newManga.name)
                 # Messages
@@ -270,7 +272,6 @@ class Bot:
             except Exception as e:
                 bot.send_message(chat_id=update.message.chat_id, text="".join(add_error))
                 self.log("user", "NOK", [user, "add", manga + " ya existente!"])
-
 
     @send_typing_action
     def delete(self, bot, update, args):
@@ -287,6 +288,7 @@ class Bot:
 
             try:
                 # Data work
+                #self.seeker.delMangaSuscription(manga, user, update.message.chat_id)
                 self.user_collection(user, self.dataset).deleteManga(manga)
                 self.db.delMangaFromUser(user, manga)
                 # Messages
