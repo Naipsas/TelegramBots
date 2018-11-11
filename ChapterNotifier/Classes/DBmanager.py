@@ -19,6 +19,11 @@ class DBmanager:
     def __init__(self, file):
         self.db_con = sqlite3.connect(file, check_same_thread = False)
 
+    def getAllUsernames(self):
+        query_list = ["SELECT name FROM sqlite_master where type = 'table';"]
+        askQuery = "".join(query_list)
+        return self.db_con.execute(askQuery).fetchall()
+
     def createUserTable(self, user):
         query_list = ["CREATE TABLE ", user,
          " (manga TEXT PRIMARY KEY     NOT NULL,"
