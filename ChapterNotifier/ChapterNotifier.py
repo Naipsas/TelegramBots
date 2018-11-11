@@ -49,21 +49,35 @@ welcome = ["¡Bienvenido al bot Chapter Notifier!\n\n",
 " Usa el comando /help para consultar todos los comandos disponibles en este bot"""] #\n\n" ,
 #" Dime, ¿qué mangas quieres seguir? Recuerda decirmelos de uno en uno, y cuando acabes usa /done\n\n"]
 
-add_usage = [exc_icon, "Por favor, use:\n\n",
+add_usage = [exc_icon, " Por favor, use:\n\n",
             "/add Nombre del manga\n",
             "Para evitar errores, se recomienda copiarlo de la web!"]
 
-add_msg = [info_icon, "Manga añadido a la colección."]
-add_error = [error_icon, "¡El manga ya existe en la colección!"]
+add_msg = [info_icon, " Manga añadido a la colección."]
+add_error = [error_icon, " ¡El manga ya existe en la colección!"]
 
-del_usage = [exc_icon, "Por favor, use:\n\n",
+del_usage = [exc_icon, " Por favor, use:\n\n",
             "/del Nombre del manga\n",
             "Para evitar errores, se recomienda copiarlo del listado!"]
 
-del_msg = [info_icon, "Manga eliminado de la colección."]
-del_error = [error_icon, "¡El manga no está en la colección!"]
+del_msg = [info_icon, " Manga eliminado de la colección."]
+del_error = [error_icon, " ¡El manga no está en la colección!"]
 
-unknown_user = [exc_icon, "¡Comando no reconocido!"]
+info_usage = [exc_icon, " Por favor, use:\n\n",
+            "/info Nombre del manga\n",
+            "Para evitar errores, se recomienda copiarlo del listado!"]
+
+info_msg = [info_icon, " Manga: "]
+info_error = [error_icon, " ¡El manga no está en la colección!"]
+
+
+list_usage = [exc_icon, " Por favor, use solamente:\n\n",
+            "/list\n"]
+
+list_msg = [info_icon, "Tu colección incluye:\n\n"]
+list_error = [error_icon, "¡La colección está vacía!"]
+
+unknown_user = [exc_icon, " ¡Comando no reconocido!"]
 
 # Logs Texts - Templates
 # Bot log
@@ -132,8 +146,8 @@ class Bot:
         self.dp.add_handler(CommandHandler('start', self.start, pass_args=False))
         self.dp.add_handler(CommandHandler('add', self.add, pass_args=True))
         self.dp.add_handler(CommandHandler('del', self.delete, pass_args=True))
-        #self.dp.add_handler(CommandHandler('list', self.list, pass_args=False))
-        #self.dp.add_handler(CommandHandler('info', self.info, pass_args=True))
+        self.dp.add_handler(CommandHandler('list', self.list, pass_args=True))
+        self.dp.add_handler(CommandHandler('info', self.info, pass_args=True))
         #self.dp.add_handler(CommandHandler('done', self.done, pass_args=False))
         self.dp.add_handler(CommandHandler('help', self.help, pass_args=False))
         self.dp.add_handler(MessageHandler(Filters.command, self.unknown))
@@ -222,7 +236,7 @@ class Bot:
                     ["",  "*Información y comportamiento del bot*\n"],
                     ["/list", "Muestra los mangas en seguimiento"],
                     ["/info", "Muestra la información del manga indicado"],
-                    ["/done", "Detiene la entrada de mangas al iniciar el bot"],
+                    #["/done", "Detiene la entrada de mangas al iniciar el bot"],
                     ["/help", "Muestra este mensaje"]
                     ]
 
@@ -283,6 +297,51 @@ class Bot:
                 self.log("user", "NOK", [user, "del", manga + " no existe!"])
 
     @send_typing_action
+    def info(self, bot, update, args):
+        if (len(args) == 0):
+            bot.send_message(chat_id=update.message.chat_id, text="".join(info_usage))
+
+        else:
+            # Previous
+            user = update.effective_user.username
+            manga = ""
+            for item in args:
+                manga += item + " "
+            manga.replace("\"", "")
+
+            try:
+                # Data work
+                myManga = self.user_collection(user, self.dataset).getManga(manga)
+                # Messages
+                info_user_msg = "".join(info_msg) + myManga.name + "\nÚltimo capítulo: " + myManga.notified
+                bot.send_message(chat_id=update.message.chat_id, text=info_user_msg)
+                self.log("user", "OK", [user, "info", manga + " consultado!"])
+            except Exception as e:
+                bot.send_message(chat_id=update.message.chat_id, text="".join(info_error))
+                self.log("user", "NOK", [user, "info", manga + " no puede consultarse!"])
+
+    @send_typing_action
+    def list(self, bot, update, args):
+        if (len(args) != 0):
+            bot.send_message(chat_id=update.message.chat_id, text="".join(list_usage))
+
+        else:
+            # Previous
+            user = update.effective_user.username
+
+            try:
+                # Data work
+                myMangas = self.user_collection(user, self.dataset).getAllMangas()
+                # Messages
+                list_user_msg = "".join(list_msg)
+                for manga in myMangas:
+                    list_user_msg = list_user_msg + manga.name + " - Capítulo: " + manga.notified + "\n"
+                bot.send_message(chat_id=update.message.chat_id, text=list_user_msg)
+                self.log("user", "OK", [user, "list", "Colección consultada."])
+            except Exception as e:
+                bot.send_message(chat_id=update.message.chat_id, text="".join(list_error))
+                self.log("user", "NOK", [user, "list", "¡La colección está vacía!"])
+
     def unknown(self, bot, update):
         user = update.effective_user.username
         bot.send_message(chat_id=update.message.chat_id, text="".join(unknown_user))

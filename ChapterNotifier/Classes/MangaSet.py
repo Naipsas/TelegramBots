@@ -59,6 +59,12 @@ class MangaSet:
             else:
                 raise Exception("El manga no existe en la colección")
 
+    def getAllMangas(self):
+        if len(self.mangas) == 0:
+            raise Exception("La colección está vacía")
+        else:
+            return self.mangas
+
     def updateManga(self, name, notified):
         if name == "":
             raise Exception("El nombre del manga no puede estar vacío")
