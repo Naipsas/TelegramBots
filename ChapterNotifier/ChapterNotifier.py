@@ -259,11 +259,12 @@ class Bot:
             for item in args:
                 manga += item + " "
             manga.replace("\"", "")
+            manga = manga[0:len(manga) - 1]
 
             try:
                 # Data work
                 newManga = Manga(manga, "last")
-                #self.seeker.addMangaSuscription(manga, user, update.message.chat_id)
+                self.seeker.addMangaSuscription(manga, user, update.message.chat_id)
                 self.user_collection(user, self.dataset).addManga(newManga)
                 self.db.addMangaToUser(user, newManga.name)
                 # Messages
@@ -272,6 +273,7 @@ class Bot:
             except Exception as e:
                 bot.send_message(chat_id=update.message.chat_id, text="".join(add_error))
                 self.log("user", "NOK", [user, "add", manga + " ya existente!"])
+                self.log("user", "NOK", [user, "add", e.message])
 
     @send_typing_action
     def delete(self, bot, update, args):
@@ -285,10 +287,11 @@ class Bot:
             for item in args:
                 manga += item + " "
             manga.replace("\"", "")
+            manga = manga[0:len(manga) - 1]
 
             try:
                 # Data work
-                #self.seeker.delMangaSuscription(manga, user, update.message.chat_id)
+                self.seeker.delMangaSuscription(manga, user, update.message.chat_id)
                 self.user_collection(user, self.dataset).deleteManga(manga)
                 try:
                     self.db.delMangaFromUser(user, manga)
@@ -313,12 +316,13 @@ class Bot:
             for item in args:
                 manga += item + " "
             manga.replace("\"", "")
+            manga = manga[0:len(manga) - 1]
 
             try:
                 # Data work
                 myManga = self.user_collection(user, self.dataset).getManga(manga)
                 # Messages
-                info_user_msg = "".join(info_msg) + myManga.name + "\nÚltimo capítulo: " + myManga.notified
+                info_user_msg = "".join(info_msg) + myManga.name + "\n\nÚltimo capítulo: " + myManga.notified
                 bot.send_message(chat_id=update.message.chat_id, text=info_user_msg)
                 self.log("user", "OK", [user, "info", manga + " consultado!"])
             except Exception as e:

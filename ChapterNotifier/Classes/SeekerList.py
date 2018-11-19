@@ -5,8 +5,6 @@
 # Chapter Availability Notifier
 # Started on Nov 2018
 
-from birdseye import eye
-
 if __name__ == "__main__":
     raise Exception("Este fichero es una clase no ejecutable")
 
@@ -18,7 +16,6 @@ class SeekerList:
         self.followers = []
         self.chat_id = []
 
-    @eye
     def addManga(self, name, user, chat_id):
         index = -1
         for item in self.mangas:
@@ -40,7 +37,6 @@ class SeekerList:
             self.followers.append([user])
             self.chat_id.append([chat_id])
 
-    @eye
     def deleteManga(self, name, user, chat_id):
         if name == "":
             raise Exception("El nombre de un manga no puede estar vacío")
@@ -51,12 +47,13 @@ class SeekerList:
 
                     self.followers[index].remove(user)
                     self.chat_id[index].remove(chat_id)
+
                     if len(self.followers[index]) == 0:
                         self.mangas.remove(item)
                         # Chapter numbers can be repeated among several mangas so
                         # we delete from the list like this
-                        self.last_notified = self.last_notified[0:index]
-                        + self.last_notified[index+1:len(self.last_notified)]
+                        self.last_notified = self.last_notified[0:index] \
+                        + self.last_notified[(index+1):len(self.last_notified)]
 
             if index == (-1):
                 raise Exception("El manga no existe en la colección")
