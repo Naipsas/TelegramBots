@@ -7,6 +7,9 @@
 
 from Manga import Manga
 
+if __name__ == "__main__":
+    raise Exception("Este fichero es una clase no ejecutable")
+
 class MangaSet:
 
     def __init__(self, user=""):

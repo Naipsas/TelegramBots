@@ -17,6 +17,9 @@ from SeekerList import SeekerList
 bot_icon = emojize(":computer:", use_aliases=True)
 bot_log = bot_icon + ' Seeker - Funcion: %s - Mensaje: %s'
 
+if __name__ == "__main__":
+    raise Exception("Este fichero es una clase no ejecutable")
+
 class ChapterSeeker:
 
     def __init__(self, logger):

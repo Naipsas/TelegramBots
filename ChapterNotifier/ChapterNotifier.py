@@ -290,7 +290,10 @@ class Bot:
                 # Data work
                 #self.seeker.delMangaSuscription(manga, user, update.message.chat_id)
                 self.user_collection(user, self.dataset).deleteManga(manga)
-                self.db.delMangaFromUser(user, manga)
+                try:
+                    self.db.delMangaFromUser(user, manga)
+                except Exception as e:
+                    print ("Aqui excepcion, el lock se queda cogido")
                 # Messages
                 bot.send_message(chat_id=update.message.chat_id, text="".join(del_msg))
                 self.log("user", "OK", [user, "delete", manga + " eliminado!"])

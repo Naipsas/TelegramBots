@@ -7,6 +7,9 @@
 
 from birdseye import eye
 
+if __name__ == "__main__":
+    raise Exception("Este fichero es una clase no ejecutable")
+
 class SeekerList:
 
     def __init__(self):
