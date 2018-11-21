@@ -39,8 +39,21 @@ class DBmanager:
 
     def createUserTable(self, user):
         query_list = ["CREATE TABLE ", user,
-         " (manga TEXT PRIMARY KEY     NOT NULL,"
-         "  notificado TEXT            NOT NULL);"]
+         " (manga TEXT PRIMARY KEY     NOT NULL,",
+         "  chat_id TEXT               NOT NULL);"]
+        createQuery = "".join(query_list)
+        try:
+            self.lock.acquire()
+            self.db_con.execute(createQuery)
+            self.lock.release()
+        except Exception as e:
+            self.lock.release()
+            raise e
+
+    def createSeekerTable(self, user):
+        query_list = ["CREATE TABLE Seeker",
+         " (manga    TEXT PRIMARY KEY  NOT NULL,",
+         "  notified TEXT              NOT NULL);"]
         createQuery = "".join(query_list)
         try:
             self.lock.acquire()
@@ -73,11 +86,11 @@ class DBmanager:
             raise e
         return result
 
-    def addMangaToUser(self, user, manga):
+    def addMangaToUser(self, user, manga, chat_id):
         query_list = ["INSERT INTO ", user,
-         " (manga, notificado)",
+         " (manga, chat_id)",
          "  VALUES (\"",
-         manga, "\", \"last\");"]
+         manga, "\",\"", chat_id, "\");"]
         insertQuery = "".join(query_list)
         try:
             self.lock.acquire()
@@ -88,9 +101,10 @@ class DBmanager:
             self.lock.release()
             raise e
 
-    def delMangaFromUser(self, user, manga):
+    def delMangaFromUser(self, user, manga, chat_id):
         query_list = ["DELETE from ", user,
-         " where manga = \"", manga, "\";"]
+         " where manga = \"", manga, "\" AND chat_id = \"",
+         chat_id, "\";"]
         deleteQuery = "".join(query_list)
         try:
             self.lock.acquire()
@@ -113,15 +127,17 @@ class DBmanager:
             raise e
         return result
 
-    def updateMangaFromUser(self, user, manga, notificado):
-        query_list = ["UPDATE ", user,
-         " set notificado = \"", notificado, "\" ",
-         "  where manga = \"", manga, "\";"]
-        updateQuery = "".join(query_list)
+    def updateNotifiedFromSeeker(self, manga, notified):
         try:
             self.lock.acquire()
+
+            query_list = ["UPDATE Seeker SET notified = \"", notified, "\"",
+                        " WHERE manga = \"", manga, "\";"]
+            updateQuery = "".join(query_list)
+
             self.db_con.execute(updateQuery)
             self.db_con.commit()
+
             self.lock.release()
         except Exception as e:
             self.lock.release()

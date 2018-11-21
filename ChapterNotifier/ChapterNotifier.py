@@ -114,14 +114,16 @@ class Bot:
         # Load data from Database
         dbTables = self.db.getAllUsernames()
         for user_item in dbTables:
-            # Create the MangaSet
-            user_dataset = MangaSet(user_item[0])
-            # Populate it
-            mangas = self.db.readUserTable(user_item[0])
-            for manga_item in mangas:
-                user_dataset.addManga(Manga(manga_item[0], manga_item[1]))
-            # Finally, add it to the list
-            self.dataset.append(user_dataset)
+            if user_item[0] != "Seeker":
+                # Create the MangaSet
+                user_dataset = MangaSet(user_item[0])
+                # Populate it
+                mangas = self.db.readUserTable(user_item[0])
+                for manga_item in mangas:
+                    user_dataset.addManga(Manga(manga_item[0], manga_item[1]))
+                    self.seeker.addMangaSuscription()
+                # Finally, add it to the list
+                self.dataset.append(user_dataset)
 
         # Library objects
         self.updater = Updater(token="BotFather_provided_token")

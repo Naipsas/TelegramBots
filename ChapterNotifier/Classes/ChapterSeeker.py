@@ -74,14 +74,6 @@ class ChapterSeeker:
             self.log("info", ["delMangaSuscription", e.message])
             raise e
 
-    def checkManga(self, manga):
-        self.log("info", ["checkManga", manga + " ahora tiene el captíulo:  "])
-        pass
-
-    def notifyManga(self, manga):
-        self.log("info", ["notifyManga", manga + " está siendo notificado a los suscriptores!"])
-        pass
-
     def run(self):
 
         while (True):
