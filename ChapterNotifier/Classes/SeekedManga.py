@@ -85,7 +85,7 @@ class SeekedManga:
 
         return found
 
-    def checkManga(self):
+    def checkManga(self, bot):
         newAvailable = False
         # Check if new chapter is available
         try:
@@ -104,7 +104,6 @@ class SeekedManga:
             for item in myParser.items:
                 if self.name.lower() in item.title.lower():
                     for chapter in item.chapters:
-                        print chapter.number + " - " + str(self.last_notified)
                         if float(chapter.number) > float(self.last_notified):
                             self.last_notified = chapter.number
                             myChapter = chapter
@@ -119,16 +118,16 @@ class SeekedManga:
         if newAvailable:
             newChapter = "#" + myChapter.number + " " + myChapter.title
             self.log("info", ["checkManga", self.name + " ahora tiene el capítulo:  " + newChapter])
-            self.notifyUsers(newChapter, myChapter.link)
+            self.notifyUsers(newChapter, myChapter.link, bot)
 
-    def notifyUsers(self, chapter, link):
-        self.log("info", ["notifyUsers", manga + " está siendo notificado a los suscriptores!"])
+    def notifyUsers(self, chapter, link, bot):
+        self.log("info", ["notifyUsers", self.name + " está siendo notificado a los suscriptores!"])
 
-        msg = [ok_icon, " *Capítulo disponible*:\n\n",
-                manga + " - " + "[" + chapter + "](" + link + ")" ]
+        msg = [ok_icon, " *" + self.name + " - Capítulo disponible*\n\n",
+                self.name + " - " + "[" + chapter + "](" + link + ")" ]
 
         for user in self.suscriptors:
-            bot.send_message(chat_id=user[1],
-                text="".join(msg),
-                parse_mode=telegram.ParseMode.MARKDOWN)
+            #print type(bot)
+            #print str(bot)
+            bot.send_message(chat_id=user[1], text="".join(msg), parse_mode=telegram.ParseMode.MARKDOWN)
 

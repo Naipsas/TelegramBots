@@ -106,7 +106,8 @@ class Bot:
             self.log("bot", "critical", ["init", "No se pudo conectar a la base de datos: " + db_file])
             exit()
 
-        self.seeker = ChapterSeeker(self.logger)
+        #print "Aqui: " + str(type(self))
+        self.seeker = ChapterSeeker(self.logger, self)
 
         # Load data from Database
         dbTables = self.db.getAllUsernames()
@@ -114,10 +115,7 @@ class Bot:
             if user_item[0] != "Seeker":
                 mangas = self.db.readUserTable(user_item[0])
                 for manga_item in mangas:
-                    #user_dataset.addManga(Manga(manga_item[0], manga_item[1]))
                     self.seeker.addMangaSuscription(manga_item[0], user_item[0], manga_item[1])
-                # Finally, add it to the list
-                # self.dataset.append(user_dataset)
 
         # Library objects
         self.updater = Updater(token="BotFather_provided_token")
@@ -152,6 +150,7 @@ class Bot:
     def run(self):
         self.log("bot", "info", ["run", "RUNNING"])
         t1 = threading.Thread(target=self.seeker.run)
+        t1.start()
         self.updater.start_polling()
         self.updater.idle()
 
@@ -221,6 +220,8 @@ class Bot:
             self.log("user", "NOK", [user, "start", e.message])
 
         bot.send_message(chat_id=update.message.chat_id, text="".join(welcome))
+        #print type(bot)
+        #print str(bot)
 
     @send_typing_action
     def help(self, bot, update):
