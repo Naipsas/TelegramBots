@@ -8,6 +8,7 @@
 from enum import Enum
 
 import logging
+import threading
 
 from emoji import emojize
 from functools import wraps
@@ -20,8 +21,6 @@ from telegram.ext import Updater
 from telegram.ext import Dispatcher
 from telegram.ext import CommandHandler, MessageHandler
 
-from Classes.Manga import Manga
-from Classes.MangaSet import MangaSet
 from Classes.DBmanager import DBmanager
 from Classes.UserBotState import UserBotState
 from Classes.ChapterSeeker import ChapterSeeker
@@ -107,23 +106,18 @@ class Bot:
             self.log("bot", "critical", ["init", "No se pudo conectar a la base de datos: " + db_file])
             exit()
 
-        # Dataset list for every user
-        self.dataset = []
         self.seeker = ChapterSeeker(self.logger)
 
         # Load data from Database
         dbTables = self.db.getAllUsernames()
         for user_item in dbTables:
             if user_item[0] != "Seeker":
-                # Create the MangaSet
-                user_dataset = MangaSet(user_item[0])
-                # Populate it
                 mangas = self.db.readUserTable(user_item[0])
                 for manga_item in mangas:
-                    user_dataset.addManga(Manga(manga_item[0], manga_item[1]))
-                    self.seeker.addMangaSuscription()
+                    #user_dataset.addManga(Manga(manga_item[0], manga_item[1]))
+                    self.seeker.addMangaSuscription(manga_item[0], user_item[0], manga_item[1])
                 # Finally, add it to the list
-                self.dataset.append(user_dataset)
+                # self.dataset.append(user_dataset)
 
         # Library objects
         self.updater = Updater(token="BotFather_provided_token")
@@ -157,6 +151,7 @@ class Bot:
 
     def run(self):
         self.log("bot", "info", ["run", "RUNNING"])
+        t1 = threading.Thread(target=self.seeker.run)
         self.updater.start_polling()
         self.updater.idle()
 
@@ -219,7 +214,6 @@ class Bot:
         try:
             # Create the user in our data
             user = update.effective_user.username
-            self.dataset.append(MangaSet(user))
             self.db.createUserTable(user)
             # Messages
             self.log("user", "OK", [user, "start", "Bot iniciado"])
@@ -265,16 +259,13 @@ class Bot:
 
             try:
                 # Data work
-                newManga = Manga(manga, "last")
                 self.seeker.addMangaSuscription(manga, user, update.message.chat_id)
-                self.user_collection(user, self.dataset).addManga(newManga)
-                self.db.addMangaToUser(user, newManga.name)
+                self.db.addMangaToUser(user, manga, update.message.chat_id)
                 # Messages
                 bot.send_message(chat_id=update.message.chat_id, text="".join(add_msg))
                 self.log("user", "OK", [user, "add", manga + " añadido!"])
             except Exception as e:
                 bot.send_message(chat_id=update.message.chat_id, text="".join(add_error))
-                self.log("user", "NOK", [user, "add", manga + " ya existente!"])
                 self.log("user", "NOK", [user, "add", e.message])
 
     @send_typing_action
@@ -294,7 +285,6 @@ class Bot:
             try:
                 # Data work
                 self.seeker.delMangaSuscription(manga, user, update.message.chat_id)
-                self.user_collection(user, self.dataset).deleteManga(manga)
                 try:
                     self.db.delMangaFromUser(user, manga)
                 except Exception as e:
@@ -304,7 +294,7 @@ class Bot:
                 self.log("user", "OK", [user, "delete", manga + " eliminado!"])
             except Exception as e:
                 bot.send_message(chat_id=update.message.chat_id, text="".join(del_error))
-                self.log("user", "NOK", [user, "del", manga + " no existe!"])
+                self.log("user", "NOK", [user, "del", e.message])
 
     @send_typing_action
     def info(self, bot, update, args):
@@ -322,14 +312,14 @@ class Bot:
 
             try:
                 # Data work
-                myManga = self.user_collection(user, self.dataset).getManga(manga)
+                data_askedfor = self.seeker.getInfo(manga, user)
                 # Messages
-                info_user_msg = "".join(info_msg) + myManga.name + "\n\nÚltimo capítulo: " + myManga.notified
+                info_user_msg = "".join(info_msg) + manga + "\n\nÚltimo capítulo: " + str(data_askedfor)
                 bot.send_message(chat_id=update.message.chat_id, text=info_user_msg)
                 self.log("user", "OK", [user, "info", manga + " consultado!"])
             except Exception as e:
                 bot.send_message(chat_id=update.message.chat_id, text="".join(info_error))
-                self.log("user", "NOK", [user, "info", manga + " no puede consultarse!"])
+                self.log("user", "NOK", [user, "info", e.message])
 
     @send_typing_action
     def list(self, bot, update, args):
@@ -342,16 +332,16 @@ class Bot:
 
             try:
                 # Data work
-                myMangas = self.user_collection(user, self.dataset).getAllMangas()
+                myMangas = self.seeker.getMangasFromUser(user)
                 # Messages
                 list_user_msg = "".join(list_msg)
-                for manga in myMangas:
-                    list_user_msg = list_user_msg + manga.name + " - Capítulo: " + manga.notified + "\n"
+                for row in xrange(len(myMangas)):
+                    list_user_msg = list_user_msg + myMangas[row][0] + " - Capítulo: " + str(myMangas[row][1]) + "\n"
                 bot.send_message(chat_id=update.message.chat_id, text=list_user_msg)
                 self.log("user", "OK", [user, "list", "Colección consultada."])
             except Exception as e:
                 bot.send_message(chat_id=update.message.chat_id, text="".join(list_error))
-                self.log("user", "NOK", [user, "list", "¡La colección está vacía!"])
+                self.log("user", "NOK", [user, "list", e.message])
 
     def unknown(self, bot, update):
         user = update.effective_user.username

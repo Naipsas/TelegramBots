@@ -90,7 +90,7 @@ class DBmanager:
         query_list = ["INSERT INTO ", user,
          " (manga, chat_id)",
          "  VALUES (\"",
-         manga, "\",\"", chat_id, "\");"]
+         manga, "\",\"", str(chat_id), "\");"]
         insertQuery = "".join(query_list)
         try:
             self.lock.acquire()
