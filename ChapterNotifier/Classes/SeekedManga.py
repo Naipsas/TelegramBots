@@ -5,12 +5,13 @@
 # Chapter Availability Notifier
 # Started on Nov 2018
 
-import urllib2
+import urllib.error
+import urllib.request
 import logging
 
 from emoji import emojize
 
-from MParser import MParser
+from Classes.MParser import MParser
 
 # Logs Texts - Templates
 bot_icon = emojize(":computer:", use_aliases=True)
@@ -91,15 +92,16 @@ class SeekedManga:
         try:
 
             hdr = {'User-Agent':'Mozilla/5.0'}
-            req = urllib2.Request('https://www.mangapanda.onl/', headers=hdr)
+            req = urllib.request.Request('https://www.mangapanda.onl/', headers=hdr)
 
             try:
-                page = urllib2.urlopen(req)
-            except urllib2.HTTPError, e:
-                print e.fp.read()
+                page = urllib.request.urlopen(req)
+            except urllib.error.HTTPError as e:
+                #print(e.fp.read())
+                pass
 
             myParser = MParser()
-            myParser.feed(page.read())
+            myParser.feed(str(page.read()))
 
             for item in myParser.items:
                 if self.name.lower() in item.title.lower():
@@ -113,7 +115,7 @@ class SeekedManga:
         except Exception as e:
             page.close()
             #self.log("warning", ["checkManga", "No se ha podido conectar con la URL"])
-            print e.message
+            print(e)
 
         if newAvailable:
             newChapter = "#" + myChapter.number + " " + myChapter.title

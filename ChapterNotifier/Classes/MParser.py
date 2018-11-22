@@ -5,7 +5,7 @@
 # Chapter Availability Notifier
 # Started on Nov 2018
 
-from HTMLParser import HTMLParser
+from html.parser import HTMLParser
 from Classes.MangaPandaItem import MangaPandaItem
 
 # Docs: https://docs.python.org/2.7/library/htmlparser.html?highlight=htmlparser

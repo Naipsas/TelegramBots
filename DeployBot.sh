@@ -58,9 +58,27 @@ function InstallAPI()
 {
 
   clear
+
+  echo "Getting ready to install PIP for Python3..."
+
+  sudo apt-get install python3-pip -y &> /dev/null
+  if [ "$?" -eq "0" ]; then
+    echo -e "\tPIP installed for python3!"
+  else
+    echo -e "\tWe couldn't install PIP for python3!"
+  fi
+
+  echo "Getting ready to install Setuptools for Python3..."
+  sudo apt-get install python3-setuptools -y &> /dev/null
+  if [ "$?" -eq "0" ]; then
+    echo -e "\tSetuptools installed for python3!"
+  else
+    echo -e "\tWe couldn't install Setuptools for python3!"
+  fi
+
   echo "Getting ready to install Telegram-Bot-API (Python)..."
 
-  sudo -H pip install python-telegram-bot --upgrade &> /dev/null
+  sudo -H python3.6 -m pip install python-telegram-bot --upgrade &> /dev/null
   if [ "$?" -eq "0" ]; then
     echo -e "\tAPI installed!"
   else
@@ -69,7 +87,7 @@ function InstallAPI()
 
   echo "Getting ready to install emoji (Python)..."
 
-  sudo -H pip install emoji --upgrade &> /dev/null
+  sudo -H python3.6 -m pip install emoji --upgrade &> /dev/null
   if [ "$?" -eq "0" ]; then
     echo -e "\tEmoji installed!"
   else
@@ -128,7 +146,7 @@ function LaunchBot()
   echo "Token: $actualToken"
   sudo sed -i -e "s/BotFather_provided_token/$actualToken/g" "/tmp/$botName/$botName.py"
 
-  python "/tmp/$botName/$botName.py"
+  python3.6 "/tmp/$botName/$botName.py"
 
   backtoMenu
 

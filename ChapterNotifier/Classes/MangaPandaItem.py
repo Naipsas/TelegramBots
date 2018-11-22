@@ -5,6 +5,9 @@
 # Chapter Availability Notifier
 # Started on Nov 2018
 
+if __name__ == "__main__":
+    raise Exception("Este fichero es una clase no ejecutable")
+
 class Chapter:
 
     def __init__(self, title="", number=0, link=""):
@@ -25,8 +28,10 @@ class MangaPandaItem:
     def addChapter(self, title, number, link):
         self.chapters.append(Chapter(title, number, link))
 
+    """
     def printAll(self):
 
         print "\n" + self.title + " - " + self.hour
         for item in self.chapters:
             print "#" + item.number + " - " + item.title + " - " + item.link
+    """

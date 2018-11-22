@@ -22,12 +22,13 @@ from telegram.ext import Dispatcher
 from telegram.ext import CommandHandler, MessageHandler
 
 from Classes.DBmanager import DBmanager
-from Classes.UserBotState import UserBotState
+#from Classes.UserBotState import UserBotState
 from Classes.ChapterSeeker import ChapterSeeker
 
-import sys
-reload(sys)
-sys.setdefaultencoding("UTF-8")
+#import sys
+#from importlib import reload
+#reload(sys)
+#sys.setdefaultencoding("UTF-8")
 
 # Icons
 info_icon = emojize(":information_source: ", use_aliases=True)
@@ -217,7 +218,7 @@ class Bot:
             # Messages
             self.log("user", "OK", [user, "start", "Bot iniciado"])
         except Exception as e:
-            self.log("user", "NOK", [user, "start", e.message])
+            self.log("user", "NOK", [user, "start", e])
 
         bot.send_message(chat_id=update.message.chat_id, text="".join(welcome))
         #print type(bot)
@@ -267,7 +268,7 @@ class Bot:
                 self.log("user", "OK", [user, "add", manga + " añadido!"])
             except Exception as e:
                 bot.send_message(chat_id=update.message.chat_id, text="".join(add_error))
-                self.log("user", "NOK", [user, "add", e.message])
+                self.log("user", "NOK", [user, "add", e])
 
     @send_typing_action
     def delete(self, bot, update, args):
@@ -286,16 +287,13 @@ class Bot:
             try:
                 # Data work
                 self.seeker.delMangaSuscription(manga, user, update.message.chat_id)
-                try:
-                    self.db.delMangaFromUser(user, manga)
-                except Exception as e:
-                    print ("Aqui excepcion, el lock se queda cogido")
+                self.db.delMangaFromUser(user, manga, update.message.chat_id)
                 # Messages
                 bot.send_message(chat_id=update.message.chat_id, text="".join(del_msg))
                 self.log("user", "OK", [user, "delete", manga + " eliminado!"])
             except Exception as e:
                 bot.send_message(chat_id=update.message.chat_id, text="".join(del_error))
-                self.log("user", "NOK", [user, "del", e.message])
+                self.log("user", "NOK", [user, "del", e])
 
     @send_typing_action
     def info(self, bot, update, args):
@@ -320,7 +318,7 @@ class Bot:
                 self.log("user", "OK", [user, "info", manga + " consultado!"])
             except Exception as e:
                 bot.send_message(chat_id=update.message.chat_id, text="".join(info_error))
-                self.log("user", "NOK", [user, "info", e.message])
+                self.log("user", "NOK", [user, "info", e])
 
     @send_typing_action
     def list(self, bot, update, args):
@@ -336,13 +334,13 @@ class Bot:
                 myMangas = self.seeker.getMangasFromUser(user)
                 # Messages
                 list_user_msg = "".join(list_msg)
-                for row in xrange(len(myMangas)):
+                for row in range(len(myMangas)):
                     list_user_msg = list_user_msg + myMangas[row][0] + " - Capítulo: " + str(myMangas[row][1]) + "\n"
                 bot.send_message(chat_id=update.message.chat_id, text=list_user_msg)
                 self.log("user", "OK", [user, "list", "Colección consultada."])
             except Exception as e:
                 bot.send_message(chat_id=update.message.chat_id, text="".join(list_error))
-                self.log("user", "NOK", [user, "list", e.message])
+                self.log("user", "NOK", [user, "list", e])
 
     def unknown(self, bot, update):
         user = update.effective_user.username

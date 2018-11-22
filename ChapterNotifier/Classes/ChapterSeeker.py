@@ -10,8 +10,7 @@ import logging
 
 from emoji import emojize
 
-from Manga import Manga
-from SeekedManga import SeekedManga
+from Classes.SeekedManga import SeekedManga
 
 # Logs Texts - Templates
 bot_icon = emojize(":computer:", use_aliases=True)
@@ -70,7 +69,7 @@ class ChapterSeeker:
                 self.mangaList[len(self.mangaList)-1].addSuscriber(user, chat_id)
 
         except Exception as e:
-            self.log("info", ["addMangaSuscription", e.message])
+            self.log("info", ["addMangaSuscription", e])
             raise e
 
     def delMangaSuscription(self, manga, user, chat_id):
@@ -80,7 +79,7 @@ class ChapterSeeker:
                     item.deleteSuscriber(user, chat_id)
 
         except Exception as e:
-            self.log("info", ["delMangaSuscription", e.message])
+            self.log("info", ["delMangaSuscription", e])
             raise e
 
     def getInfo(self, manga, user):

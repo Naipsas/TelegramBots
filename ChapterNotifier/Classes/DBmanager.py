@@ -10,9 +10,6 @@
 import sqlite3
 import threading
 
-from Manga import Manga
-from MangaSet import MangaSet
-
 if __name__ == "__main__":
     raise Exception("Este fichero es una clase no ejecutable")
 
@@ -104,7 +101,7 @@ class DBmanager:
     def delMangaFromUser(self, user, manga, chat_id):
         query_list = ["DELETE from ", user,
          " where manga = \"", manga, "\" AND chat_id = \"",
-         chat_id, "\";"]
+         str(chat_id), "\";"]
         deleteQuery = "".join(query_list)
         try:
             self.lock.acquire()
