@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
 class ChapterSeeker:
 
-    def __init__(self, logger, bot):
+    def __init__(self, logger, updater):
 
         # basicConfig
         self.sleepTime = 50 # 3600
@@ -36,7 +36,7 @@ class ChapterSeeker:
 
         # We keep the logger and bot as well
         self.logger = logger
-        self.bot = bot
+        self.updater = updater
 
     def log(self, type, args):
 
@@ -117,7 +117,7 @@ class ChapterSeeker:
             for item in self.mangaList:
 
                 # Look for a new Chapter
-                last = item.checkManga(self.bot)
+                last = item.checkManga(self.updater)
 
             # After work done, we sleep
             time.sleep(self.sleepTime)

@@ -107,8 +107,12 @@ class Bot:
             self.log("bot", "critical", ["init", "No se pudo conectar a la base de datos: " + db_file])
             exit()
 
+        # Library objects
+        self.updater = Updater(token="BotFather_provided_token")
+        self.dp = self.updater.dispatcher
+
         #print "Aqui: " + str(type(self))
-        self.seeker = ChapterSeeker(self.logger, self)
+        self.seeker = ChapterSeeker(self.logger, self.updater)
 
         # Load data from Database
         dbTables = self.db.getAllUsernames()
@@ -117,10 +121,6 @@ class Bot:
                 mangas = self.db.readUserTable(user_item[0])
                 for manga_item in mangas:
                     self.seeker.addMangaSuscription(manga_item[0], user_item[0], manga_item[1])
-
-        # Library objects
-        self.updater = Updater(token="BotFather_provided_token")
-        self.dp = self.updater.dispatcher
 
         # Commands binding + Conversation Handlers
         """

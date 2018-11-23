@@ -5,12 +5,12 @@
 # Chapter Availability Notifier
 # Started on Nov 2018
 
+import logging
 import urllib.error
 import urllib.request
-import logging
 
 from emoji import emojize
-
+from telegram import ParseMode
 from Classes.MParser import MParser
 
 # Logs Texts - Templates
@@ -86,7 +86,7 @@ class SeekedManga:
 
         return found
 
-    def checkManga(self, bot):
+    def checkManga(self, updater):
         newAvailable = False
         # Check if new chapter is available
         try:
@@ -120,16 +120,14 @@ class SeekedManga:
         if newAvailable:
             newChapter = "#" + myChapter.number + " " + myChapter.title
             self.log("info", ["checkManga", self.name + " ahora tiene el capítulo:  " + newChapter])
-            self.notifyUsers(newChapter, myChapter.link, bot)
+            self.notifyUsers(newChapter, myChapter.link, updater)
 
-    def notifyUsers(self, chapter, link, bot):
+    def notifyUsers(self, chapter, link, updater):
         self.log("info", ["notifyUsers", self.name + " está siendo notificado a los suscriptores!"])
 
         msg = [ok_icon, " *" + self.name + " - Capítulo disponible*\n\n",
                 self.name + " - " + "[" + chapter + "](" + link + ")" ]
 
         for user in self.suscriptors:
-            #print type(bot)
-            #print str(bot)
-            bot.send_message(chat_id=user[1], text="".join(msg), parse_mode=telegram.ParseMode.MARKDOWN)
+            updater.bot.send_message(chat_id=user[1], text="".join(msg), parse_mode=ParseMode.MARKDOWN)
 
