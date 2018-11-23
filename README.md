@@ -6,11 +6,12 @@ Finished Bots
 --
 
 1. TutorialBot - Aimed to be part of a tutorial in my blog. Start command plus eco.
+2. Chapter Notifier (Alpha) - Manga availability notifier, based on [mangapanda](www.mangapanda.onl) webpage
 
 Working in
 --
 
-1. Chapter Notifier - Manga availability notifier, based on [mangapanda](www.mangapanda.onl) webpage
+1. Chapter Notifier - Fixes, improvements, new commands...
 
 Used libraries
 --
