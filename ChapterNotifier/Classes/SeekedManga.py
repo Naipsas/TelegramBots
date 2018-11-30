@@ -113,7 +113,7 @@ class SeekedManga:
 
             page.close()
         except Exception as e:
-            page.close()
+            #page.close()
             #self.log("warning", ["checkManga", "No se ha podido conectar con la URL"])
             print(e)
 
