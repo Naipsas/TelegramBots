@@ -47,7 +47,7 @@ class DBmanager:
             self.lock.release()
             raise e
 
-    def createSeekerTable(self, user):
+    def createSeekerTable(self):
         query_list = ["CREATE TABLE Seeker",
          " (manga    TEXT PRIMARY KEY  NOT NULL,",
          "  notified TEXT              NOT NULL);"]
@@ -124,6 +124,47 @@ class DBmanager:
             raise e
         return result
 
+    def addMangaToSeeker(self, manga, notified):
+        try:
+            self.lock.acquire()
+
+            query_list = ["INSERT INTO Seeker (manga, notified) VALUES ",
+                            " (\"", manga, "\", \"", notified, "\");" ]
+            updateQuery = "".join(query_list)
+
+            self.db_con.execute(updateQuery)
+            self.db_con.commit()
+            self.lock.release()
+
+        except Exception as e:
+            self.lock.release()
+            raise e
+
+    def readSeekerTable(self):
+        query_list = ["SELECT * FROM Seeker;"]
+        readQuery = "".join(query_list)
+        try:
+            self.lock.acquire()
+            result = self.db_con.execute(readQuery)
+            self.lock.release()
+        except Exception as e:
+            self.lock.release()
+            raise e
+        return result
+
+    def readMangaFromSeeker(self, manga):
+        query_list = ["SELECT * FROM Seeker",
+         " WHERE manga = \"", manga, "\";"]
+        askQuery = "".join(query_list)
+        try:
+            self.lock.acquire()
+            result = self.db_con.execute(askQuery)
+            self.lock.release()
+        except Exception as e:
+            self.lock.release()
+            raise e
+        return result
+
     def updateNotifiedFromSeeker(self, manga, notified):
         try:
             self.lock.acquire()
@@ -134,7 +175,19 @@ class DBmanager:
 
             self.db_con.execute(updateQuery)
             self.db_con.commit()
+            self.lock.release()
 
+        except Exception as e:
+            self.lock.release()
+            raise e
+
+    def delMangaFromSeeker(self, manga):
+        query_list = ["DELETE from Seeker",
+         " WHERE manga = \"", manga, "\";" ]
+        deleteQuery = "".join(query_list)
+        try:
+            self.lock.acquire()
+            self.db_con.execute(deleteQuery)
             self.lock.release()
         except Exception as e:
             self.lock.release()

@@ -21,14 +21,8 @@ from telegram.ext import Updater
 from telegram.ext import Dispatcher
 from telegram.ext import CommandHandler, MessageHandler
 
-from Classes.DBmanager import DBmanager
 #from Classes.UserBotState import UserBotState
 from Classes.ChapterSeeker import ChapterSeeker
-
-#import sys
-#from importlib import reload
-#reload(sys)
-#sys.setdefaultencoding("UTF-8")
 
 # Icons
 info_icon = emojize(":information_source: ", use_aliases=True)
@@ -97,30 +91,25 @@ class Bot:
 
         self.logger = logging.getLogger(__name__)
 
-        # Database usage
-        db_file = "ChapterNotifier.db"
-
-        try:
-            self.db = DBmanager(db_file)
-            self.log("bot", "info", ["init", "DB Conectada: " + db_file])
-        except Exception as e:
-            self.log("bot", "critical", ["init", "No se pudo conectar a la base de datos: " + db_file])
-            exit()
-
         # Library objects
         self.updater = Updater(token="BotFather_provided_token")
         self.dp = self.updater.dispatcher
 
-        #print "Aqui: " + str(type(self))
-        self.seeker = ChapterSeeker(self.logger, self.updater)
+        self.seeker = ChapterSeeker(self.logger, self.updater, "ChapterNotifier.db")
 
         # Load data from Database
+        mangas = self.db.readSeekerTable()
+        latest = []
+        for manga_item in mangas:
+            latest.append([manga_item[0], manga_item[1]])
+
         dbTables = self.db.getAllUsernames()
         for user_item in dbTables:
             if user_item[0] != "Seeker":
                 mangas = self.db.readUserTable(user_item[0])
                 for manga_item in mangas:
-                    self.seeker.addMangaSuscription(manga_item[0], user_item[0], manga_item[1])
+                    self.seeker.addMangaSuscription(manga_item[0], user_item[0], manga_item[1], "0")
+
 
         # Commands binding + Conversation Handlers
         """
@@ -221,8 +210,6 @@ class Bot:
             self.log("user", "NOK", [user, "start", e])
 
         bot.send_message(chat_id=update.message.chat_id, text="".join(welcome))
-        #print type(bot)
-        #print str(bot)
 
     @send_typing_action
     def help(self, bot, update):

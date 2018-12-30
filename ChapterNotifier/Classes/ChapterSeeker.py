@@ -10,6 +10,7 @@ import logging
 
 from emoji import emojize
 
+from Classes.DBmanager import DBmanager
 from Classes.SeekedManga import SeekedManga
 
 # Logs Texts - Templates
@@ -26,67 +27,103 @@ if __name__ == "__main__":
 
 class ChapterSeeker:
 
-    def __init__(self, logger, updater):
+    def __init__(self, logger, updater, db_file):
 
         # basicConfig
-        self.sleepTime = 50 # 3600
+        self.__sleepTime = 50 # 3600
 
         # Unique list to check
-        self.mangaList = []
+        self.__mangaList = []
 
-        # We keep the logger and bot as well
-        self.logger = logger
-        self.updater = updater
+        # We keep the logger, bot and db objects
+        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                             level=logging.INFO)
+        self.__logger = logging.getLogger(__name__)
+        self.__updater = updater
 
-    def log(self, type, args):
+        # Open DB file and prepare it
+        try:
+            self.__db = DBmanager(db_file)
+            self.__log("info", ["init", "DB Conectada: " + db_file])
+        except Exception as e:
+            self.__log("critical", ["init", "No se pudo conectar a la base de datos: " + db_file])
+            exit()
+
+        try:
+            self.__db.createSeekerTable()
+            self.__log("info", ["init", "Seeker DB creada"])
+        except Exception as e:
+            self.__log("info", ["init", "Seeker DB ya existe"])
+
+        # Load data from Database
+        mangas_cursor = self.__db.readSeekerTable()
+        latest = []
+        for manga_item in mangas_cursor:
+            # Manga, Latest
+            latest.append([manga_item[0], manga_item[1]])
+
+        users_cursor = self.__db.getAllUsernames()
+        for user_item in users_cursor:
+            if user_item[0] != "Seeker":
+                user_cursor = self.__db.readUserTable(user_item[0])
+                for manga_item in user_cursor:
+                    self.seeker.addMangaSuscription(manga_item[0], user_item[0], manga_item[1], "0")
+
+    def __log(self, type, args):
 
         if type == "info":
             prefix = info_icon
-            self.logger.info(prefix + bot_log, args[0], args[1])
+            self.__logger.info(prefix + bot_log, args[0], args[1])
 
         elif type == "warn":
             prefix = warn_icon
-            self.logger.warn(prefix + bot_log, args[0], args[1])
+            self.__logger.warn(prefix + bot_log, args[0], args[1])
 
         elif type == "error":
             prefix = error_icon
-            self.logger.error(prefix + bot_log, args[0], args[1])
+            self.__logger.error(prefix + bot_log, args[0], args[1])
 
         else: # type == "critical"
             prefix = critical_icon
-            self.logger.critical(prefix + bot_log, args[0], args[1])
+            self.__logger.critical(prefix + bot_log, args[0], args[1])
 
-    def addMangaSuscription(self, manga, user, chat_id):
+    def addMangaSuscription(self, manga, user, chat_id, last):
         try:
             found = False
-            for item in self.mangaList:
+            for item in self.__mangaList:
                 if item.name == manga:
                     item.addSuscriber(user, chat_id)
                     found = True
 
             if found == False:
-                self.mangaList.append(SeekedManga(manga, 0, self.logger))
-                self.mangaList[len(self.mangaList)-1].addSuscriber(user, chat_id)
+                self.__mangaList.append(SeekedManga(manga, last, self.__logger))
+                self.__mangaList[len(self.__mangaList)-1].addSuscriber(user, chat_id)
+                print("Manga: #%s#" % (manga))
+                self.__db.addMangaToSeeker(manga, last)
 
         except Exception as e:
-            self.log("info", ["addMangaSuscription", e])
+            self.__log("info", ["addMangaSuscription", e])
             raise e
 
     def delMangaSuscription(self, manga, user, chat_id):
         try:
-            for item in self.mangaList:
+            for item in self.__mangaList:
                 if item.name == manga:
                     item.deleteSuscriber(user, chat_id)
+                    # If it's empty already
+                    if item.getSuscribersNum() == 0:
+                        self.__mangaList.remove(item)
+                        self.__db.delMangaFromSeeker(manga)
 
         except Exception as e:
-            self.log("info", ["delMangaSuscription", e])
+            self.__log("info", ["delMangaSuscription", e])
             raise e
 
     def getInfo(self, manga, user):
         try:
             result = "No está suscrito"
 
-            for item in self.mangaList:
+            for item in self.__mangaList:
                 if item.name == manga:
                     if item.checkSuscriber(user):
                         result = item.last_notified
@@ -99,7 +136,7 @@ class ChapterSeeker:
         try:
             results = []
 
-            for item in self.mangaList:
+            for item in self.__mangaList:
                 if item.checkSuscriber(user):
                     results.append([item.name, item.last_notified])
 
@@ -114,11 +151,11 @@ class ChapterSeeker:
 
             i = 0
 
-            for item in self.mangaList:
+            for item in self.__mangaList:
 
                 # Look for a new Chapter
-                last = item.checkManga(self.updater)
+                last = item.checkManga(self.__updater, self.__db)
 
             # After work done, we sleep
-            time.sleep(self.sleepTime)
+            time.sleep(self.__sleepTime)
 

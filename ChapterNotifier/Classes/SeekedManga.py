@@ -30,7 +30,7 @@ class SeekedManga:
 
     def __init__(self, name, last, logger):
         self.name = name
-        self.last_notified = 0
+        self.last_notified = last
         self.suscriptors = []
 
         # We keep the logger as well
@@ -86,7 +86,10 @@ class SeekedManga:
 
         return found
 
-    def checkManga(self, updater):
+    def getSuscribersNum(self):
+        return len(self.suscriptors)
+
+    def checkManga(self, updater, db):
         newAvailable = False
         # Check if new chapter is available
         try:
@@ -121,6 +124,7 @@ class SeekedManga:
             newChapter = "#" + myChapter.number + " " + myChapter.title
             self.log("info", ["checkManga", self.name + " ahora tiene el capítulo:  " + newChapter])
             self.notifyUsers(newChapter, myChapter.link, updater)
+            db.updateNotifiedFromSeeker(self.name, myChapter.number)
 
     def notifyUsers(self, chapter, link, updater):
         self.log("info", ["notifyUsers", self.name + " está siendo notificado a los suscriptores!"])
