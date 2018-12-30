@@ -95,21 +95,7 @@ class Bot:
         self.updater = Updater(token="BotFather_provided_token")
         self.dp = self.updater.dispatcher
 
-        self.seeker = ChapterSeeker(self.logger, self.updater, "ChapterNotifier.db")
-
-        # Load data from Database
-        mangas = self.db.readSeekerTable()
-        latest = []
-        for manga_item in mangas:
-            latest.append([manga_item[0], manga_item[1]])
-
-        dbTables = self.db.getAllUsernames()
-        for user_item in dbTables:
-            if user_item[0] != "Seeker":
-                mangas = self.db.readUserTable(user_item[0])
-                for manga_item in mangas:
-                    self.seeker.addMangaSuscription(manga_item[0], user_item[0], manga_item[1], "0")
-
+        self.seeker = ChapterSeeker(self.updater, "ChapterNotifier.db")
 
         # Commands binding + Conversation Handlers
         """
