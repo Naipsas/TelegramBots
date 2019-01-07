@@ -94,13 +94,48 @@ class ChapterSeeker:
             # Manga, Latest
             self.__mangaList.append(SeekedManga(manga_item[0], manga_item[1]))
 
+
+    """
+    Cannot use addMangaSuscription cause it's public and uses __addSuscriber
+    with default writing to DB
+    """
     def __loadUsersDB(self):
         users_cursor = self.__db.getAllUsernames()
         for user_item in users_cursor:
             if user_item[0] != "Seeker":
                 user_cursor = self.__db.readUserTable(user_item[0])
                 for manga_item in user_cursor:
-                    self.addMangaSuscription(manga_item[0], user_item[0], manga_item[1])
+                    self.__addMangaSuscriptionFromDB(manga_item[0], user_item[0], manga_item[1])
+
+    def __addMangaSuscriptionFromDB(self, manga, user, chat_id):
+        try:
+            found = False
+            index = 0
+            for item in self.__mangaList:
+                if item.name == manga:
+                    found = True
+                else:
+                    if not found:
+                        index += 1
+
+            if found == False:
+                self.__mangaList.append(SeekedManga(manga, last))
+                self.__db.addMangaToSeeker(manga, last)
+
+            self.__addSuscriber(index, user, chat_id, False)
+
+            self.__log("info", ["__addMangaSuscription", user + " añadido a " + manga])
+
+        except Exception as e:
+            # self.__log("info", ["addMangaSuscription", e])
+            self.__log("info", ["__addMangaSuscription", user + " ya suscrito a " + manga])
+            raise e
+
+    def addNewUser(self, user):
+        try:
+            self.__db.createUserTable(user)
+        except Exception as e:
+            raise e
 
     def addMangaSuscription(self, manga, user, chat_id):
         try:
@@ -126,7 +161,7 @@ class ChapterSeeker:
             self.__log("info", ["addMangaSuscription", user + " ya suscrito a " + manga])
             raise e
 
-    def __addSuscriber(self, index, user, chat_id):
+    def __addSuscriber(self, index, user, chat_id, save_to_DB=True):
 
         if index == len(self.__suscriptors):
             self.__suscriptors.append([])
@@ -139,6 +174,8 @@ class ChapterSeeker:
 
         if not found:
             self.__suscriptors[index].append([user, chat_id])
+            if save_to_DB:
+                self.__db.addMangaToUser(user, self.__mangaList[index].name, chat_id)
         else:
             raise Exception(user + " ya suscrito.")
 
@@ -175,6 +212,7 @@ class ChapterSeeker:
             for item in manga:
                 if (item[0] == user) and (item[1] == chat_id):
                     self.__suscriptors[index].remove(item)
+                    self.__db.delMangaFromUser(user, self.__mangaList[index].name, chat_id)
                     found = True
 
         if not found:
@@ -186,11 +224,13 @@ class ChapterSeeker:
     def getInfo(self, manga, user):
         try:
             result = "No está suscrito"
+            index = 0
 
             for item in self.__mangaList:
                 if item.name == manga:
                     if self.__checkSuscriber(index, user):
                         result = self.__mangaList[index].last_notified
+                index += 1
 
             return result
 
@@ -201,7 +241,7 @@ class ChapterSeeker:
         found = False
         for manga in self.__suscriptors[index]:
             for item in manga:
-                if item[0] == user:
+                if item == user:
                     found = True
 
         return found

@@ -89,13 +89,13 @@ class Bot:
         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                              level=logging.INFO)
 
-        self.logger = logging.getLogger(__name__)
+        self.__logger = logging.getLogger(__name__)
 
         # Library objects
-        self.updater = Updater(token="BotFather_provided_token")
-        self.dp = self.updater.dispatcher
+        self.__updater = Updater(token="BotFather_provided_token")
+        self.__dp = self.__updater.dispatcher
 
-        self.seeker = ChapterSeeker(self.updater, "ChapterNotifier.db")
+        self.__seeker = ChapterSeeker(self.__updater, "ChapterNotifier.db")
 
         # Commands binding + Conversation Handlers
         """
@@ -114,21 +114,21 @@ class Bot:
         self.dispatcher.add_handler(bot_start_handler)
         """
 
-        self.dp.add_handler(CommandHandler('start', self.start, pass_args=False))
-        self.dp.add_handler(CommandHandler('add', self.add, pass_args=True))
-        self.dp.add_handler(CommandHandler('del', self.delete, pass_args=True))
-        self.dp.add_handler(CommandHandler('list', self.list, pass_args=True))
-        self.dp.add_handler(CommandHandler('info', self.info, pass_args=True))
-        #self.dp.add_handler(CommandHandler('done', self.done, pass_args=False))
-        self.dp.add_handler(CommandHandler('help', self.help, pass_args=False))
-        self.dp.add_handler(MessageHandler(Filters.command, self.unknown))
+        self.__dp.add_handler(CommandHandler('start', self.start, pass_args=False))
+        self.__dp.add_handler(CommandHandler('add', self.add, pass_args=True))
+        self.__dp.add_handler(CommandHandler('del', self.delete, pass_args=True))
+        self.__dp.add_handler(CommandHandler('list', self.list, pass_args=True))
+        self.__dp.add_handler(CommandHandler('info', self.info, pass_args=True))
+        #self.__dp.add_handler(CommandHandler('done', self.done, pass_args=False))
+        self.__dp.add_handler(CommandHandler('help', self.help, pass_args=False))
+        self.__dp.add_handler(MessageHandler(Filters.command, self.unknown))
 
     def run(self):
         self.log("bot", "info", ["run", "RUNNING"])
-        t1 = threading.Thread(target=self.seeker.run)
+        t1 = threading.Thread(target=self.__seeker.run)
         t1.start()
-        self.updater.start_polling()
-        self.updater.idle()
+        self.__updater.start_polling()
+        self.__updater.idle()
 
     # Auxiliar FUNCTIONS
     def send_action(action):
@@ -163,25 +163,25 @@ class Bot:
                 prefix = error_icon
 
             # Both info, user faulires are not critical for the bot itself
-            self.logger.info(prefix + user_log, args[0], args[1], args[2])
+            self.__logger.info(prefix + user_log, args[0], args[1], args[2])
 
         else: # origin = bot
 
             if type == "info":
                 prefix = info_icon
-                self.logger.info(prefix + bot_log, args[0], args[1])
+                self.__logger.info(prefix + bot_log, args[0], args[1])
 
             elif type == "warn":
                 prefix = warn_icon
-                self.logger.warn(prefix + bot_log, args[0], args[1])
+                self.__logger.warn(prefix + bot_log, args[0], args[1])
 
             elif type == "error":
                 prefix = error_icon
-                self.logger.error(prefix + bot_log, args[0], args[1])
+                self.__logger.error(prefix + bot_log, args[0], args[1])
 
             else: # type == "critical"
                 prefix = critical_icon
-                self.logger.critical(prefix + bot_log, args[0], args[1])
+                self.__logger.critical(prefix + bot_log, args[0], args[1])
 
     # COMMAND FUNCTIONS
     @send_typing_action
@@ -189,8 +189,7 @@ class Bot:
         try:
             # Create the user in our data
             user = update.effective_user.username
-            self.db.createUserTable(user)
-            # Messages
+            self.__seeker.addNewUser(user)
             self.log("user", "OK", [user, "start", "Bot iniciado"])
         except Exception as e:
             self.log("user", "NOK", [user, "start", e])
@@ -226,17 +225,11 @@ class Bot:
         else:
             # Previous
             user = update.effective_user.username
-            manga = ""
-            for item in args:
-                manga += item + " "
-            manga.replace("\"", "")
-            manga = manga[0:len(manga) - 1]
+            manga = self.__getMangaName(args)
 
             try:
-                # Data work
-                self.seeker.addMangaSuscription(manga, user, update.message.chat_id)
-                self.db.addMangaToUser(user, manga, update.message.chat_id)
-                # Messages
+                self.__seeker.addMangaSuscription(manga, user, update.message.chat_id)
+
                 bot.send_message(chat_id=update.message.chat_id, text="".join(add_msg))
                 self.log("user", "OK", [user, "add", manga + " añadido!"])
             except Exception as e:
@@ -251,17 +244,11 @@ class Bot:
         else:
             # Previous
             user = update.effective_user.username
-            manga = ""
-            for item in args:
-                manga += item + " "
-            manga.replace("\"", "")
-            manga = manga[0:len(manga) - 1]
+            manga = self.__getMangaName(args)
 
             try:
-                # Data work
-                self.seeker.delMangaSuscription(manga, user, update.message.chat_id)
-                self.db.delMangaFromUser(user, manga, update.message.chat_id)
-                # Messages
+                self.__seeker.delMangaSuscription(manga, user, update.message.chat_id)
+
                 bot.send_message(chat_id=update.message.chat_id, text="".join(del_msg))
                 self.log("user", "OK", [user, "delete", manga + " eliminado!"])
             except Exception as e:
@@ -276,15 +263,11 @@ class Bot:
         else:
             # Previous
             user = update.effective_user.username
-            manga = ""
-            for item in args:
-                manga += item + " "
-            manga.replace("\"", "")
-            manga = manga[0:len(manga) - 1]
+            manga = self.__getMangaName(args)
 
             try:
                 # Data work
-                data_askedfor = self.seeker.getInfo(manga, user)
+                data_askedfor = self.__seeker.getInfo(manga, user)
                 # Messages
                 info_user_msg = "".join(info_msg) + manga + "\n\nÚltimo capítulo: " + str(data_askedfor)
                 bot.send_message(chat_id=update.message.chat_id, text=info_user_msg)
@@ -304,7 +287,7 @@ class Bot:
 
             try:
                 # Data work
-                myMangas = self.seeker.getMangasFromUser(user)
+                myMangas = self.__seeker.getMangasFromUser(user)
                 # Messages
                 list_user_msg = "".join(list_msg)
                 for row in range(len(myMangas)):
@@ -319,6 +302,15 @@ class Bot:
         user = update.effective_user.username
         bot.send_message(chat_id=update.message.chat_id, text="".join(unknown_user))
         self.log("user", "NOK", [user, update.message.text, "Comando no existente"])
+
+    def __getMangaName(self, args):
+        manga = ""
+        for item in args:
+            manga += item + " "
+        manga.replace("\"", "")
+        manga = manga[0:len(manga) - 1]
+
+        return manga
 
 if __name__ == '__main__':
 
